@@ -95,30 +95,97 @@ BOLT = (
 )
 
 def zeus_strike():
-    """double éclair net, la foudre descend, impact au sol avec halo"""
+    """éclair ramifié : canal sinueux + branches, rémanence dorée,
+    tremblement d'impact, anneaux au sol, extinction douce"""
     cols, rows = width(), height()
-    # deux pulses propres — pas de stroboscope
-    for brightness in (MARBLE, DIM, BRIGHT, None):
+    random.seed(11)
+
+    # 1 — deux pulses propres
+    for b in (MARBLE, None, BRIGHT, None):
         sys.stdout.write("\033[H")
-        if brightness:
-            sys.stdout.write(f"{brightness}{'█' * cols}{X}\n" * rows)
+        if b:
+            sys.stdout.write(f"{b}{'█' * cols}{X}\n" * rows)
         sys.stdout.flush()
         time.sleep(0.07)
-        if brightness is None:
+        if b is None:
             clear()
-        time.sleep(0.05)
-    # la foudre descend trait par trait avec halo au sol
-    for i in range(1, len(BOLT) + 1):
+        time.sleep(0.04)
+
+    # 2 — structure : canal principal sinueux + 2 branches qui partent en biais
+    x = cols // 2
+    main = []
+    for r in range(10):
+        x += random.choice((-1, 0, 0, 1))
+        main.append((r, x))
+    branches = []
+    for fork_row, direction in ((2, -1), (5, +1)):
+        bx = dict(main)[fork_row]
+        for k in range(1, 4):
+            branches.append((fork_row + k, bx + direction * k))
+    cells = {}
+    for r, c in main:
+        cells[(r, c)] = ("╱" if r % 3 else "╲", GOLD)
+    for r, c in branches:
+        cells[(r, c)] = ("·" if random.random() < 0.4 else "╲", GOLD)
+
+    top = max(2, (rows - 14) // 2)
+    sys.stdout.write("\033[?25l")
+
+    def draw(active_rows, shake=0, glow=False, override=None):
         sys.stdout.write("\033[H")
-        for r in range(rows - len(BOLT) - 2):
+        for _ in range(top):
             print()
-        for ln in BOLT[:i]:
-            print(GOLD + B + ln + X)
-        # halo d'impact au sol — s'élargit
-        splash = min(i, 8)
-        print(DIM + "▒" * (cols // 2 - splash) + GOLD + "▓" * splash + DIM + "▒" * (cols // 2 - splash) + X)
+        for r in range(10):
+            line = []
+            for c in range(cols):
+                if (r, c) in cells and r <= active_rows:
+                    ch, col = cells[(r, c)]
+                    col = override or col
+                    line.append(f"{DIM}{ch}{X}" if (glow and r < active_rows)
+                                else f"{B}{col}{ch}{X}")
+                else:
+                    line.append(" ")
+            print(" " * max(0, shake) + "".join(line))
+        sys.stdout.flush()
+
+    # 3 — la foudre descend ; le canal déjà passé passe en rémanence
+    for r in range(10):
+        draw(r, glow=(r > 0))
+        time.sleep(0.045)
+
+    # 4 — canal complet → flash blanc du canal entier
+    draw(9, glow=False, override=MARBLE)
+    time.sleep(0.12)
+
+    # 5 — impact : tremblement d'écran
+    for f in range(4):
+        draw(9, shake=random.choice((-1, 0, 1)), override=MARBLE)
         time.sleep(0.05)
-    time.sleep(0.4)
+
+    # 6 — anneaux au sol qui s'élargissent
+    sys.stdout.write("\033[H")
+    for _ in range(top):
+        print()
+    for r, c in main:
+        if r < 9:
+            print(" " * c + DIM + ("╱" if r % 3 else "╲") + X)
+    for ring in (4, 9, 15, 22):
+        half = cols // 2
+        print(DIM + "▒" * max(0, half - ring) + GOLD + "─" * (ring * 2) + DIM + "▒" * max(0, half - ring) + X)
+        time.sleep(0.09)
+
+    # 7 — extinction : la rémanence meurt doucement
+    for col in (GOLD, DIM, DIM):
+        sys.stdout.write("\033[H")
+        for _ in range(top):
+            print()
+        for r, c in main:
+            if r < 9:
+                print(" " * c + col + ("╱" if r % 3 else "╲") + X)
+        sys.stdout.flush()
+        time.sleep(0.15)
+    sys.stdout.write("\033[?25h\033[0m")
+    time.sleep(0.3)
 
 # ─────────────────── LAURIER ───────────────────
 LAUREL = (
