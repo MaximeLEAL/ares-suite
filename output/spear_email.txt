@@ -1,0 +1,13 @@
+From: Marc Leroy <no-reply@acme-secure.com>
+To: jc@example.com
+Subject: [ACTION REQUISE] Document partagé — Acme
+
+Bonjour Jean Dupont,
+
+Marc Leroy (IT Manager chez Acme) a partagé un document confidentiel.
+Validation requise avant le 16/11/2026.
+
+→ http://127.0.0.1:8080
+
+Ce lien expire dans 24h.
+Marc Leroy — IT Manager, Acme
