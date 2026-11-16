@@ -9,6 +9,7 @@ BANNER = r"""
     ▄▀▄ ▄▀▄ █ ▄▀▄ █▀▄ ▄▀▀ ▀▄▀ █▄█ ▄▀▀ █▀█ █ █ █▀▄ ▄▀▀
     █▄█ █▀▄ █ █▄█ █▄▀ ▀▄▄ █ █ █ █ ▀▄▄ █▀▄ █▄█ █▄▀ ▀▄▄
      ═══════ ARES — SUITE OFFENSIVE — L'ARÈTE DE LA GUERRE ═══════
+                 Powered by Maxime Leal
 """
 
 MENU = """

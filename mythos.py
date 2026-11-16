@@ -1,11 +1,13 @@
-# mythos.py — animation d'intro mythologique grecque pour ARES
-# temple qui s'élève, éclair de Zeus, laurier, titre doré, méandre
-# stdlib only — appelé par ares_toolkit.py au lancement
-import os, sys, time, random, shutil
+# mythos.py — intro cinématique mythologique grecque pour ARES
+# braise lente, temple qui s'élève et respire, éclair de Zeus propre,
+# laurier matérialisé par scan, titre balayé, Powered by Maxime Leal
+import os, sys, time, random, shutil, math
 
 def _c(code): return f"\033[{code}m"
-GOLD = _c("93"); MARBLE = _c("97"); RED = _c("91"); CYAN = _c("96")
-DIM = _c("90"); X = _c("0"); B = _c("1"); FLASH_BG = _c("107")
+GOLD = _c("93"); MARBLE = _c("97"); RED = _c("91")
+DIM = _c("90"); X = _c("0"); B = _c("1"); BRIGHT = _c("1;97")
+
+POWERED = "Powered by Maxime Leal"
 
 def clear():
     sys.stdout.write("\033[2J\033[3J\033[H"); sys.stdout.flush()
@@ -14,111 +16,194 @@ def width(): return shutil.get_terminal_size().columns
 def height(): return shutil.get_terminal_size().lines
 
 def meander(n):
-    """frise grecque — motif méandre"""
-    unit = "⊔⊓"
-    return (unit * (n // 2))[:n]
+    return ("⊔⊓" * (n // 2 + 1))[:n]
 
-def frame(text, color=GOLD):
-    w = max(width() - 4, len(text) + 10)
-    bar = meander(w)
-    print(f"{DIM}{bar}{X}")
-    print(f"{color}{B}{text.center(w)}{X}")
-    print(f"{DIM}{bar}{X}")
+def bars(w):
+    edge = DIM + meander(w) + X
+    return edge
 
-def lightning_bolt(color=GOLD):
-    """l'éclair de Zeus se dessine du haut de l'écran jusqu'au sol"""
-    cols, rows = width(), height()
-    cx = cols // 2
-    bolt = [(0, 0, "╲"), (1, 1, "╲"), (2, 2, "╱"), (1, 3, "╱"),
-            (0, 4, "╲"), (1, 5, "╲"), (-1, 6, "╱"), (0, 7, "╲"),
-            (2, 8, "╲"), (1, 9, "╱"), (0, 10, "⚡")]
-    top = 2
-    for i, (dx, dy, ch) in enumerate(bolt):
-        sys.stdout.write("\033[H")
-        for r in range(dy):
-            print()
-        line = " " * max(0, cx + dx - 1)
-        for j in range(i + 1):
-            ddx, ddy, cch = bolt[j]
-            if ddy == dy or j == i:
-                line += (GOLD + B + cch if j == i else "  ")
-        print(line)
-        time.sleep(0.06)
+# ─────────────────── BRAISE — poussière qui monte ───────────────────
+EMBER_CHARS = "·˙∶"
+
+class EmberField:
+    def __init__(self, cols, rows, density=0.06):
+        self.cols, self.rows = cols, rows
+        self.density = density
+        self.d = [[random.random() for _ in range(cols)] for _ in range(rows)]
+
+    def step(self):
+        for r in range(self.rows):
+            for c in range(self.cols):
+                self.d[r][c] += random.uniform(-0.04, 0.05)
+                if self.d[r][c] > 1: self.d[r][c] = 0
+
+    def line(self, r):
+        out = []
+        for c in range(self.cols):
+            v = self.d[r][c]
+            out.append(f"{DIM}{random.choice(EMBER_CHARS)}{X}" if v > (1 - self.density) else " ")
+        return "".join(out)
+
+# ─────────────────── TEMPLE ───────────────────
+TEMPLE = (
+"                      ▄▀▀▄▀▀▄▀▀▄▀▀▄▀▀▄▀▀▄▀▀▄▀▀▄▀▀▄                    ",
+"                   ▄▀▀▄▀▀▄▀▀▄▀▀▄▀▀▄▀▀▄▀▀▄▀▀▄▀▀▄▀▀▄                    ",
+"        ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║            ",
+"        ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║            ",
+"        ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║            ",
+"        ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║            ",
+"        ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║  ║ ║            ",
+"      ══╩═╩══╩═╩══╩═╩══╩═╩══╩═╩══╩═╩══╩═╩══╩═╩══╩═╩══╩═╩══          ",
+)
 
 def temple_rise():
-    """le temple s'élève : les colonnes poussent du sol au fronton"""
-    cols = width()
-    COL = """    ╔══╗      ╔══╗      ╔══╗      ╔══╗
-    ║  ║      ║  ║      ║  ║      ║  ║
-    ║  ║      ║  ║      ║  ║      ║  ║
-   ╔╧══╧╗    ╔╧══╧╗    ╔╧══╧╗    ╔╧══╧╗
-  ╔╧════╧╗  ╔╧════╧╗  ╔╧════╧╗  ╔╧════╧╗
- ╔╧══════╧╗╔╧══════╧╗╔╧══════╧╗╔╧══════╧╗"""
-    lines = COL.split("\n")
-    print()
-    for ln in lines:
-        print(MARBLE + ln + X)
-        time.sleep(0.18)
-    print(DIM + "    —— OLYMPE, SOMMET DE L'ARÈTE ——" + X)
+    """les colonnes poussent du bas, braise autour, torchlight subtil"""
+    cols, rows = width(), height()
+    embers = EmberField(cols, rows)
+    print("\n")
+    for i in range(1, len(TEMPLE) + 1):
+        for r in range(rows - len(TEMPLE) - 3):
+            print(embers.line(r))
+            embers.step()
+        for ln in TEMPLE[:i]:
+            flick = MARBLE if random.random() < 0.85 else DIM
+            print(flick + ln + X)
+        time.sleep(0.14)
+        if i < len(TEMPLE):
+            sys.stdout.write(f"\033[{len(TEMPLE) + 1}A\033[J")
+    # respiration : le temple oscille doucement entre marbre et dim
+    for f in range(10):
+        breath = MARBLE if (f // 3) % 2 == 0 else DIM
+        lines = [embers.line(r) for r in range(6)] + [breath + ln + X for ln in TEMPLE]
+        sys.stdout.write("\033[H" + "\n".join(lines) + "\033[0m")
+        embers.step()
+        time.sleep(0.12)
+
+# ─────────────────── ÉCLAIR DE ZEUS ───────────────────
+BOLT = (
+"                 ╲                    ",
+"                  ╲                   ",
+"                  ╱                   ",
+"                 ╱                    ",
+"                 ╲                    ",
+"                  ╲                   ",
+"                  ╱                   ",
+"                 ╱                    ",
+"                  ╲                   ",
+"                 ╲                    ",
+"                  ⚡                   ",
+)
+
+def zeus_strike():
+    """double éclair net, la foudre descend, impact au sol avec halo"""
+    cols, rows = width(), height()
+    # deux pulses propres — pas de stroboscope
+    for brightness in (MARBLE, DIM, BRIGHT, None):
+        sys.stdout.write("\033[H")
+        if brightness:
+            sys.stdout.write(f"{brightness}{'█' * cols}{X}\n" * rows)
+        sys.stdout.flush()
+        time.sleep(0.07)
+        if brightness is None:
+            clear()
+        time.sleep(0.05)
+    # la foudre descend trait par trait avec halo au sol
+    for i in range(1, len(BOLT) + 1):
+        sys.stdout.write("\033[H")
+        for r in range(rows - len(BOLT) - 2):
+            print()
+        for ln in BOLT[:i]:
+            print(GOLD + B + ln + X)
+        # halo d'impact au sol — s'élargit
+        splash = min(i, 8)
+        print(DIM + "▒" * (cols // 2 - splash) + GOLD + "▓" * splash + DIM + "▒" * (cols // 2 - splash) + X)
+        time.sleep(0.05)
     time.sleep(0.4)
 
-def laurel():
-    """couronne de laurier qui se dessine autour du titre"""
-    L = r"""
-        ,@@@@@@@@@,
-     @@@@@@@@@@@@@@@@@@@
-    @@@@@@@@@@@@@@@@@@@@@@@
-   @@@@ ϟ  A R E S  ϟ @@@@
-    @@@@@@@@@@@@@@@@@@@@@@@
-     @@@@@@@@@@@@@@@@@@@
-        '@@@@@@@@@'
-    """
-    for ln in L.split("\n"):
-        print(GOLD + ln + X)
-        time.sleep(0.08)
+# ─────────────────── LAURIER ───────────────────
+LAUREL = (
+"              ,@@@@@@@@@,",
+"           @@@@@@@@@@@@@@@@@@",
+"         @@@@@@@@@@@@@@@@@@@@@@",
+"        @@@@   ϟ   ϟ   @@@@",
+"         @@@@@@@@@@@@@@@@@@@@@@",
+"           @@@@@@@@@@@@@@@@@@",
+"              '@@@@@@@@@'",
+)
 
-def zeus_flash(cycles=3):
-    """éclair plein écran — la foudre de Zeus frappe le temple"""
-    cols, rows = width(), height()
-    for i in range(cycles):
-        # flash blanc
-        sys.stdout.write("\033[H" + f"{MARBLE}{'█' * cols}{X}\n" * rows + "\033[0m")
-        sys.stdout.flush(); time.sleep(0.09)
-        # extinction brutale
-        sys.stdout.write("\033[2J\033[H\033[0m")
-        sys.stdout.flush(); time.sleep(0.07)
-    lightning_bolt()
-    time.sleep(0.3)
-
-def title_reveal():
-    """le titre ARES en or, lettre par lettre, avec le sous-titre"""
-    title = "A R E S"
-    sub = "SUITE OFFENSIVE — DE LA MYTHOLOGIE À LA GUERRE"
-    for i in range(1, len(title) + 1):
-        print(f"\r{GOLD}{B}{title[:i]}{X}", end="", flush=True)
-        time.sleep(0.14)
+def laurel_materialize():
+    """le laurier se matérialise : une ligne de scan descend, les caractères se fixent"""
     print()
-    time.sleep(0.2)
-    for i in range(1, len(sub) + 1):
-        print(f"\r{MARBLE}{sub[:i]}{X}", end="", flush=True)
+    for i in range(1, len(LAUREL) + 1):
+        sys.stdout.write(f"\033[{len(LAUREL) + 1}A\033[J") if i > 1 else None
+        for ln in LAUREL[:i]:
+            # ligne en cours : d'abord du bruit puis se fixe
+            if ln == LAUREL[i - 1]:
+                for _ in range(2):
+                    noise = "".join(random.choice("░▒@# ") if ch != " " else " " for ch in ln)
+                    print("\r" + DIM + noise + X, end="", flush=True)
+                    time.sleep(0.05)
+                print("\r" + GOLD + ln + X)
+            else:
+                print(GOLD + ln + X)
+        time.sleep(0.1)
+
+# ─────────────────── TITRE ───────────────────
+def title_reveal():
+    """tête lumineuse qui traverse le titre, le texte se fixe derrière — or"""
+    title = "A  R  E  S"
+    sub = "S U I T E   O F F E N S I V E"
+    sys.stdout.write("\033[?25l")
+    print()
+    for txt, col in [(title, GOLD + B), (sub, MARBLE)]:
+        w = len(txt); p = 0
+        while p <= w:
+            head = txt[p] if p < w else " "
+            settled = txt[:p]
+            trail = "─" * max(0, w - p - 1)
+            sys.stdout.write(f"\r{col}{settled}{X}{BRIGHT}{head}{X}{DIM}{trail}{X}")
+            sys.stdout.flush()
+            p += max(1, w // 28)
+            time.sleep(0.035)
+        sys.stdout.write(f"\r{col}{txt}{X}\n")
+        time.sleep(0.15)
+    sys.stdout.write("\033[?25h\033[0m")
+    # sous-sous-titre + crédit
+    slow = "DE LA MYTHOLOGIE À LA GUERRE"
+    for i in range(1, len(slow) + 1):
+        print(f"\r{DIM}{slow[:i]}{X}", end="", flush=True)
         time.sleep(0.02)
+    print()
+    for i in range(1, len(POWERED) + 1):
+        print(f"\r{GOLD}{POWERED[:i]}{X}", end="", flush=True)
+        time.sleep(0.03)
     print()
     time.sleep(0.4)
 
 def intro():
+    cols = width()
     clear()
-    frame("── LE TEMPLE S'ÉLÈVE ──", DIM)
-    time.sleep(0.3)
+    print(DIM + bars(cols) + X)
+    print("\n")
+    slow_line("  Delphes — avant l'aube.", 0.01)
+    time.sleep(0.6)
     clear()
+    print(DIM + bars(cols) + X)
     temple_rise()
+    zeus_strike()
     clear()
-    zeus_flash()
-    clear()
-    laurel()
+    print(DIM + bars(cols) + X)
+    laurel_materialize()
     title_reveal()
-    frame("QUE LA GUERRE COMMENCE", RED)
-    time.sleep(0.5)
+    print()
+    print(DIM + bars(cols) + X)
+    time.sleep(0.6)
     clear()
+
+def slow_line(text, delay):
+    for ch in text:
+        sys.stdout.write(DIM + ch + X); sys.stdout.flush(); time.sleep(delay)
+    print()
 
 if __name__ == "__main__":
     intro()
