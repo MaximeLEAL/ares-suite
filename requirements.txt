@@ -1,0 +1,13 @@
+colorama
+requests
+aiohttp
+paramiko
+pynput
+pycryptodome
+pyinstaller
+beautifulsoup4
+python-whois
+anthropic
+netifaces
+pyperclip
+shodan
